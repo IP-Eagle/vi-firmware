@@ -231,7 +231,37 @@ if [ -z $CI ] && ! command -v openocd >/dev/null 2>&1; then
 
     echo "Installing OpenOCD..."
     if [ $OS == "linux" ]; then
-        _install "openocd"
+        OPENOCD_BASENAME=clang+llvm-3.2-x86_64-apple-darwin11
+        OPENOCD_FILE=$OPENOCD_BASENAME.tar.gz
+        OPENOCD_URL=http://downloads.sourceforge.net/project/openocd/openocd/0.6.1/$OPENOCD_FILE
+
+        if [ $DISTRO == "Ubuntu" ]; then
+            if ! test -e $OPENOCD_FILE
+            then
+                echo "Downloading OpenOCD 0.6.1..."
+                download $OPENOCD_URL
+            fi
+
+            if ! test -d $OPENOCD_BASENAME
+            then
+                echo "Extracting OpenOCD 0.6.1 to local folder..."
+                tar -xzf $OPENOCD_FILE
+                echo "OpenOCD 0.6.1 installed"
+            fi
+
+            if ! command -v openocd >/dev/null 2>&1; then
+                echo "Compiling OpenOCD 0.6.1 from source..."
+                _install libftdi-dev
+                _pushd $OPENOCD_BASENAME
+                ./configure --enable-ft2232_libftdi
+                make
+                sudo make install
+                echo "Follow the instructions at http://www.tincantools.com/wiki/Accessing_Devices_without_Sudo to allow flashing as a normal, non-root user."
+                _popd
+            fi
+        else
+            _install "openocd"
+        fi
     elif [ $OS == "mac" ]; then
         _install libftdi
         _install libusb
